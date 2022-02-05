@@ -1,18 +1,12 @@
 import threading
 import requests
 import time
+import sys, argparse
 
-ipCamo = "https://camo.githubusercontent.com/c46ade9101ee7d7d6ba8f7b87995263fc1efed462f929c58c4353a5e83dd1ece/68747470733a2f2f6b6f6d617265762e636f6d2f67687076632f3f757365726e616d653d6c696e7573746f7563687469707326636f6c6f723d384536344430"
-
-nThread = 1
-nFors = 100
-delays = 0.1
-
-
-def main(nThreads, nFor, delay):
+def startBotting(nThreads, nFor, delay, link):
     th = []
     for i in range(nThreads):
-        th.append(threading.Thread(target=get, args=[ipCamo, nFor, delay]))
+        th.append(threading.Thread(target=get, args=[link, nFor, delay]))
 
     for i in range(nThreads):
         th[i].start()
@@ -30,5 +24,51 @@ def get(ip, times, delayGet):
         time.sleep(delayGet)
 
 
+def setupArgouments():
+    if len(sys.argv) > 1:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--username', help="Name github")
+        parser.add_argument('--times', type=int, help="Times you want it to be done")
+        parser.add_argument('--delay', type=float, help="Delay between each times")
+        parser.add_argument('--threads', type=int, help="Numbers of threads")
+        args = parser.parse_args()
+
+        nameStart = args.username
+        nForStart = args.times
+        delaysStart = args.delay
+        nThreadStart = args.threads
+        return nameStart, nForStart, delaysStart, nThreadStart
+    return None, None, None, None
+
+
+def askMissingArgouments(nameInput, nForInput, delaysInput, nThreadInput):
+    if nameInput is None:
+        nameInput = input("Name github: ")
+    if nForInput is None:
+        nForInput = input("N Times: ")
+    if delaysInput is None:
+        delaysInput = float(input("Delay:"))
+    if nThreadInput is None:
+        nThreadInput = input("N Threads: ")
+    return nameInput, nForInput, delaysInput, nThreadInput
+
+def getCamoIp(github):
+    # https://camo.githubusercontent.com
+    html = requests.get("https://github.com/" + github)
+    content = html.content.__str__()
+    start = content.find("https://camo.githubusercontent.com")
+    if start == -1:
+        return False
+    end = content[start:].find('"')
+    return content[start:start+end]
+
+
 if __name__ == '__main__':
-    main(nThread, nFors, delays)
+    name, nFor, delays, nThread = setupArgouments()
+    name, nFor, delays, nThread = askMissingArgouments(name, nFor, delays, nThread)
+    ipCamo = getCamoIp(name)
+    if not ipCamo:
+        print("This user doesnt have a views counter")
+    else:
+        print("Start botting")
+        startBotting(nThread, nFor, delays, ipCamo)
